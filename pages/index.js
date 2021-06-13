@@ -1,44 +1,34 @@
-import Head from 'next/head'
-import Layout, { siteTitle } from '../components/layout'
-import utilStyles from '../styles/utils.module.css'
-import { getSortedPostsData } from '../lib/posts'
+// import styles from '../styles/Home.module.css'
+import { DataStore } from 'aws-amplify'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import Date from '../components/date'
+import { Post } from '../src/models'
 
-export async function getStaticProps() {
-  const allPostsData = getSortedPostsData()
-  return {
-    props: {
-      allPostsData
+export default function Home() {
+  const [posts, setPosts] = useState([])
+
+  useEffect(() => {
+    fetchPosts()
+    async function fetchPosts() {
+      const postData = await DataStore.query(Post)
+      setPosts(postData)
     }
-  }
-}
-
-export default function Home({allPostsData}) {
+    const subscription = DataStore.observe(Post).subscribe(() => fetchPosts())
+    return () => subscription.unsubscribe()
+  }, [])
+  
   return (
-    <Layout home>
-      <Head>
-        <title>{siteTitle}</title>
-      </Head>
-      <section className={utilStyles.headingMd}>
-        <p>Technology fascinates and excites me. javascript, react, node, docker, aws</p>
-      </section>
-      <section className={`${utilStyles.headingMd} ${utilStyles.padding1px}`}>
-        <h2 className={utilStyles.headingLg}>Blog</h2>
-        <ul className={utilStyles.list}>
-          {allPostsData.map(({ id, date, title }) => (
-            <li className={utilStyles.listItem} key={id}>
-            <Link href={`/posts/${id}`}>
-              <a>{title}</a>
-            </Link>
-            <br />
-            <small className={utilStyles.lightText}>
-              <Date dateString={date} />
-            </small>
-          </li>
-          ))}
-        </ul>
-      </section>
-    </Layout>
+    <div>
+      <h1>Posts</h1>
+      {
+        posts.map(post => (
+          <Link href={`/posts/${post.id}`}>
+            <a>
+              <h2>{post.title}</h2>
+            </a>
+          </Link>
+        ))
+      }
+    </div>
   )
 }
