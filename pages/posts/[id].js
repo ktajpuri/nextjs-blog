@@ -1,10 +1,19 @@
-import { withSSRContext } from 'aws-amplify'
+import {useEffect, useState} from 'react';
+import { DataStore, withSSRContext } from 'aws-amplify'
 import { Post } from '../../src/models'
 import Markdown from 'react-markdown'
 import { useRouter } from 'next/router'
 
-export default function PostComponent({ post }) {
+export default function PostComponent({ id }) {
   const router = useRouter()
+  const [post, setPost] = useState('');
+  useEffect(() => {
+    fetchPost()
+    async function fetchPost() {
+      const postData = await DataStore.query(Post, id)
+      setPost(postData)
+    }
+  }, [id])
   if (router.isFallback) {
     return <div>Loading...</div>
   }
@@ -26,14 +35,12 @@ export async function getStaticPaths(req) {
 }
 
 export async function getStaticProps (req) {
-  const { DataStore } = withSSRContext(req)
   const { params } = req
   const { id } = params
-  const post = await DataStore.query(Post, id)
 
   return {
     props: {
-      post: JSON.parse(JSON.stringify(post))
+      id
     },
     revalidate: 1
   }
